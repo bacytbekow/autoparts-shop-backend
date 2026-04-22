@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+
 class CategoryCreateView(generics.CreateAPIView):
     """Создание категории"""
     serializer_class = CategoryCreateUpdateSerializer
@@ -17,6 +19,16 @@ class CategoryCreateView(generics.CreateAPIView):
             created_by=self.request.user,
             updated_by=self.request.user
         )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            'message': f'Категория "{serializer.instance.name}" успешно создана',
+            'category': serializer.data
+        }, status=status.HTTP_201_CREATED)
 
 
 # apps/categories/views.py
@@ -49,8 +61,7 @@ class CategoryListView(generics.ListAPIView):
 
 @extend_schema(
     methods=['DELETE'],
-    parameters={
-
+    parameters=[  # ← квадратные скобки!
         OpenApiParameter(
             name='hard',
             description='Полное удаление из БД (hard=true) или мягкое (по умолчанию)',
@@ -58,7 +69,7 @@ class CategoryListView(generics.ListAPIView):
             type=str,
             default='false'
         )
-    },
+    ],
     responses={
         200: {'description': 'Категория скрыта или удалена'},
         400: {'description': 'Ошибка: есть дочерние категории'},

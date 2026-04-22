@@ -23,6 +23,8 @@ urlpatterns = [
     # API приложений
     path('api/users/', include('apps.users.urls')),
     path('api/categories/', include('apps.categories.urls')),
+    path('api/brands/', include('apps.brands.urls')),
+
 ]
 
 if settings.DEBUG:

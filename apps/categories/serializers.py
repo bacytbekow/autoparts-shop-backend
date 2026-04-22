@@ -25,18 +25,35 @@ class CategoryPublicSerializer(serializers.ModelSerializer):
         return CategoryPublicSerializer(children, many=True).data
 
 
-
+# apps/categories/serializers.py
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
-    """Детальный просмотр категории (админ/контент)"""
     children = CategoryPublicSerializer(many=True, read_only=True)
     parent_name = serializers.CharField(source='parent.name', read_only=True)
+    created_by_info = serializers.SerializerMethodField()
+    updated_by_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'slug', 'description', 'image', 'parent', 'parent_name',
-                  'is_active', 'order', 'meta_title', 'meta_description',
-                  'created_at', 'updated_at', 'created_by', 'updated_by', 'children']
+                  'children', 'is_active', 'order', 'meta_title', 'meta_description',
+                  'created_at', 'updated_at', 'created_by_info', 'updated_by_info']
+
+    def get_created_by_info(self, obj):
+        if obj.created_by:
+            return {
+                'id': obj.created_by.id,
+                'username': obj.created_by.username
+            }
+        return None
+
+    def get_updated_by_info(self, obj):
+        if obj.updated_by:
+            return {
+                'id': obj.updated_by.id,
+                'username': obj.updated_by.username
+            }
+        return None
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
