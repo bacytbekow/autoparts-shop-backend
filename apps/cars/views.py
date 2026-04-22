@@ -44,7 +44,29 @@ class CarListView(generics.ListAPIView):
             return Car.objects.all()
         return Car.objects.filter(is_active=True)
 
-
+@extend_schema(
+    methods=['DELETE'],
+    parameters=[
+        OpenApiParameter(
+            name='hard',
+            description='Полное удаление из БД (hard=true) или мягкое (по умолчанию)',
+            required=False,
+            type=str,
+            default='false'
+        )
+    ],
+    responses={
+        200: {
+            'description': 'Мягкое удаление: автомобиль скрыт (is_active=False). Полное удаление: автомобиль удалён из БД'
+        },
+        403: {
+            'description': 'Нет прав (контент-менеджер может скрывать только свои)'
+        },
+        404: {
+            'description': 'Автомобиль не найден'
+        },
+    }
+)
 class CarDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Детали, редактирование, удаление автомобиля"""
     queryset = Car.objects.all()
