@@ -35,22 +35,19 @@ class ProductListView(generics.ListAPIView):
 
     def get_serializer_class(self):
         user = self.request.user
-
-        # Админ, контент, суперадмин видят все товары (с is_active)
         if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
             return ProductListSerializer
-
-        # Гости и покупатели видят только активные товары
         return ProductPublicSerializer
+
+    def get_serializer_context(self):  # ← добавить
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_queryset(self):
         user = self.request.user
-
-        # Админ, контент, суперадмин видят все товары
         if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
             return Product.objects.all()
-
-        # Гости и покупатели видят только активные
         return Product.objects.filter(is_active=True)
 
 
@@ -86,6 +83,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return Product.objects.all()
 
+    def get_serializer_context(self):  # ← добавить
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def update(self, request, *args, **kwargs):
         """Обновление товара с проверкой прав"""
         partial = kwargs.pop('partial', False)
@@ -107,7 +109,6 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
             'message': f'Товар "{instance.name}" успешно обновлён',
             'product': serializer.data
         }, status=status.HTTP_200_OK)
-
 
     def destroy(self, request, *args, **kwargs):
         user = request.user

@@ -3,7 +3,7 @@ from .models import Product
 from apps.categories.serializers import CategoryPublicSerializer
 from apps.brands.serializers import BrandPublicSerializer
 from apps.cars.serializers import CarPublicSerializer
-
+from apps.wishlists.models import Wishlist  # добавить импорт
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,12 +35,20 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductPublicSerializer(serializers.ModelSerializer):
     """Для покупателей и гостей (только активные)"""
     brand_name = serializers.CharField(source='brand.name', read_only=True)
+    is_favorite = serializers.SerializerMethodField()  # ← добавить
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'article', 'brand_name',
                   'price', 'old_price', 'main_image', 'is_available',
-                  'is_popular', 'is_new', 'short_description']
+                  'is_popular', 'is_new', 'short_description',
+                  'is_favorite']  # ← добавить
+
+    def get_is_favorite(self, obj):  # ← добавить
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, product=obj).exists()
+        return False
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -50,6 +58,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     cars = CarPublicSerializer(many=True, read_only=True)
     created_by_info = serializers.SerializerMethodField()
     updated_by_info = serializers.SerializerMethodField()
+    is_favorite = serializers.SerializerMethodField()  # ← добавить
 
     class Meta:
         model = Product
@@ -59,7 +68,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                   'price', 'old_price', 'quantity', 'main_image',
                   'is_available', 'is_popular', 'is_new', 'is_active',
                   'meta_title', 'meta_description', 'views_count', 'orders_count',
-                  'created_at', 'updated_at', 'created_by_info', 'updated_by_info']
+                  'created_at', 'updated_at', 'created_by_info', 'updated_by_info',
+                  'is_favorite']  # ← добавить
 
     def get_created_by_info(self, obj):
         if obj.created_by:
@@ -76,3 +86,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 'username': obj.updated_by.username
             }
         return None
+
+    def get_is_favorite(self, obj):  # ← добавить
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, product=obj).exists()
+        return False
