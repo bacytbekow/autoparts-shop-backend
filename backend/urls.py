@@ -29,7 +29,7 @@ urlpatterns = [
     path('api/product-images/', include('apps.product_images.urls')),
     path('api/cart/', include('apps.cart.urls')),
     path('api/orders/', include('apps.orders.urls')),
-
+    path('api/reviews/', include('apps.reviews.urls')),
 ]
 
 if settings.DEBUG:
