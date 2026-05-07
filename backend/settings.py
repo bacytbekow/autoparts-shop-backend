@@ -5,8 +5,14 @@ from decouple import Config, RepositoryEnv
 import os
 import dj_database_url
 
-# Загрузка переменных из .env_settings
-config = Config(RepositoryEnv('.env_settings'))
+from decouple import Config, RepositoryEnv, RepositoryEmpty
+
+# Попытаться загрузить файл .env_settings, если он существует
+try:
+    config = Config(RepositoryEnv('.env_settings'))
+except FileNotFoundError:
+    # Если файла нет (например, на Render), загружаем переменные из окружения
+    config = Config(RepositoryEmpty())
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
