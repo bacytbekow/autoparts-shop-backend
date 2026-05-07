@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 from decouple import Config, RepositoryEnv
 import os
+import dj_database_url
 
 # Загрузка переменных из .env_settings
 config = Config(RepositoryEnv('.env_settings'))
@@ -92,14 +93,10 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'autoparts_shop',
-        'USER': 'root',
-        'PASSWORD': '2004D@niel',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
+    )
 }
 
 
