@@ -5,7 +5,10 @@ from rest_framework.response import Response
 from .models import Product
 from .serializers import *
 from .permissions import IsAdminOrContent
-
+from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from .filters import ProductFilter
 
 class ProductCreateView(generics.CreateAPIView):
     """Создание товара"""
@@ -30,8 +33,13 @@ class ProductCreateView(generics.CreateAPIView):
 
 
 class ProductListView(generics.ListAPIView):
-    """Список товаров"""
+    serializer_class = ProductPublicSerializer
     permission_classes = [permissions.AllowAny]
+
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = ProductFilter
+    ordering_fields = ['price', 'created_at']
+    ordering = ['-created_at']
 
     def get_serializer_class(self):
         user = self.request.user
@@ -39,16 +47,14 @@ class ProductListView(generics.ListAPIView):
             return ProductListSerializer
         return ProductPublicSerializer
 
-    def get_serializer_context(self):  # ← добавить
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
     def get_queryset(self):
         user = self.request.user
-        if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
-            return Product.objects.all()
-        return Product.objects.filter(is_active=True)
+        queryset = Product.objects.all()
+
+        if not (user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser)):
+            queryset = queryset.filter(is_active=True)
+
+        return queryset
 
 
 
