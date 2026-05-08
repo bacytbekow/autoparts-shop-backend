@@ -148,7 +148,17 @@ class CustomerRegisterSerializer(serializers.ModelSerializer):
 
 
 # ========== ДЛЯ ПРОФИЛЯ =================
+# apps/users/serializers.py
+
 class ProfileSerializer(BaseUserDetailSerializer):
-    """Для просмотра/редактирования своего профиля"""
     class Meta(BaseUserDetailSerializer.Meta):
-        read_only_fields = ['id', 'username', 'email', 'date_joined']
+        fields = BaseUserDetailSerializer.Meta.fields + ['role']
+        read_only_fields = ['id', 'username', 'email', 'date_joined', 'role']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Только суперпользователя превращаем в superadmin
+        if instance.is_superuser:
+            data['role'] = 'superadmin'
+        # Админ, менеджер, контент остаются как есть
+        return data

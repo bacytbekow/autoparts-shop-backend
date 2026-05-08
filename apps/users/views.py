@@ -8,7 +8,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from .permissions import *
 
+class ProfileView(generics.RetrieveAPIView):
+    """Профиль текущего авторизованного пользователя"""
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get_object(self):
+        return self.request.user
 
 # Админстраторов
 class CreateAdminView(generics.CreateAPIView):
