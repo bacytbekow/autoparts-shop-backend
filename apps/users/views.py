@@ -326,23 +326,19 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
         )
 
 
-
-
 class AllUsersListView(generics.ListAPIView):
-    """Список всех пользователей"""
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated, AdminOrSuperAdmin]
 
     def get_queryset(self):
         user = self.request.user
 
-        # Суперадмин видит всех
+        # Суперадмин видит всех, кроме себя
         if user.is_superuser:
-            return User.objects.all()
+            return User.objects.exclude(id=user.id)
 
-        # Обычный админ видит всех, кроме суперадминов
+        # Обычный админ видит всех, кроме себя и суперадминов
         if user.role == 'admin':
-            return User.objects.filter(is_superuser=False)
+            return User.objects.filter(is_superuser=False).exclude(id=user.id)
 
-        # Остальные роли не видят список
         return User.objects.none()
