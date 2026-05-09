@@ -40,7 +40,7 @@ class UserListSerializer(serializers.ModelSerializer):
     """Универсальный список для всех пользователей"""
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'role', 'date_joined']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'role', 'is_active', 'date_joined']
 
 
 
