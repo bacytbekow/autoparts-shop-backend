@@ -324,3 +324,25 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
             {'message': f'Покупатель "{username}" успешно удалён'},
             status=status.HTTP_200_OK
         )
+
+
+
+
+class AllUsersListView(generics.ListAPIView):
+    """Список всех пользователей"""
+    serializer_class = UserListSerializer
+    permission_classes = [permissions.IsAuthenticated, AdminOrSuperAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Суперадмин видит всех
+        if user.is_superuser:
+            return User.objects.all()
+
+        # Обычный админ видит всех, кроме суперадминов
+        if user.role == 'admin':
+            return User.objects.filter(is_superuser=False)
+
+        # Остальные роли не видят список
+        return User.objects.none()
