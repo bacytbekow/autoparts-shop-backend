@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import sys
+
 from decouple import Config, RepositoryEnv
 import os
 import dj_database_url
@@ -12,7 +13,9 @@ try:
 except FileNotFoundError:
     # Если файла нет (например, на Render), загружаем переменные из окружения
     config = Config(RepositoryEmpty())
-
+print("=== Загрузка Cloudinary ===")
+print(f"CLOUD_NAME: {config('CLOUDINARY_CLOUD_NAME')}")
+print(f"API_KEY: {config('CLOUDINARY_API_KEY')}")
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'users.User'
