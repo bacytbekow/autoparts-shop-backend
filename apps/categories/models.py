@@ -14,7 +14,7 @@ class Category(models.Model):
         related_name='children',
         verbose_name="Родительская категория"
     )
-    image = models.ImageField(upload_to='categories/', blank=True, null=True, verbose_name="Изображение")
+    image = models.ImageField(blank=True, null=True, verbose_name="Изображение")
     description = models.TextField(blank=True, verbose_name="Описание")
     order = models.IntegerField(default=0, verbose_name="Порядок сортировки")
     is_active = models.BooleanField(default=True, verbose_name="Активна")

@@ -4,7 +4,6 @@ import sys
 from decouple import Config, RepositoryEnv
 import os
 import dj_database_url
-
 from decouple import Config, RepositoryEnv, RepositoryEmpty
 
 # Попытаться загрузить файл .env_settings, если он существует
