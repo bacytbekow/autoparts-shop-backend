@@ -5,7 +5,7 @@ from .serializers import *
 from .permissions import IsAdminOrContentOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 
@@ -13,6 +13,7 @@ class CategoryCreateView(generics.CreateAPIView):
     """Создание категории"""
     serializer_class = CategoryCreateUpdateSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrContentOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # ← добавить
 
     def perform_create(self, serializer):
         serializer.save(
@@ -29,7 +30,6 @@ class CategoryCreateView(generics.CreateAPIView):
             'message': f'Категория "{serializer.instance.name}" успешно создана',
             'category': serializer.data
         }, status=status.HTTP_201_CREATED)
-
 
 # apps/categories/views.py
 
