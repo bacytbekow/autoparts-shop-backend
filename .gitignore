@@ -5,10 +5,10 @@ __pycache__/
 .Python
 env/
 venv/
-.env
+.envgo
 .venv/
 .env_settings
-
+./categories/
 # Django
 *.log
 db.sqlite3
@@ -16,7 +16,7 @@ db.sqlite3
 /media/
 /staticfiles/
 /static/
-
+.env
 # IDE
 .vscode/
 .idea/

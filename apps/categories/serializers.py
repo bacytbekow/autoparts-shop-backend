@@ -5,20 +5,16 @@ from .models import Category
 
 # для создать и изменить
 class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
-    parent = serializers.IntegerField(required=False, allow_null=True)
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'image', 'parent', 'order',
                   'is_active', 'meta_title', 'meta_description']
-
-    def validate_parent(self, value):
-        if value is not None:
-            try:
-                category = Category.objects.get(id=value)
-            except Category.DoesNotExist:
-                raise serializers.ValidationError("Родительская категория не найдена")
-        return value
 # публичный
 class CategoryPublicSerializer(serializers.ModelSerializer):
     """Для покупателей и гостей (только имя, фото и дети)"""
