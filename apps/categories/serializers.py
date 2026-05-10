@@ -5,11 +5,15 @@ from .models import Category
 
 # для создать и изменить
 class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
+    parent = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'image', 'parent', 'order',
                   'is_active', 'meta_title', 'meta_description']
+        extra_kwargs = {
+            'parent': {'required': False, 'allow_null': True},
+        }
 
 # публичный
 class CategoryPublicSerializer(serializers.ModelSerializer):
