@@ -27,38 +27,25 @@ class CategoryCreateView(generics.CreateAPIView):
         print("DATA:", request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        category = serializer.instance
 
         return Response({
-            'message': f'Категория "{serializer.instance.name}" успешно создана',
-            'category': serializer.data
+            'message': f'Категория "{category.name}" успешно создана',
+            'category': CategoryDetailSerializer(category).data
         }, status=status.HTTP_201_CREATED)
 
 # apps/categories/views.py
 
 class CategoryListView(generics.ListAPIView):
-    """Список категорий"""
-    permission_classes = [permissions.AllowAny]
-
-    def get_serializer_class(self):
-        user = self.request.user
-
-        # Админ, контент, суперадмин видят поле is_active
-        if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
-            return CategoryListSerializer  # с is_active
-
-        # Гости и покупатели видят только публичные поля
-        return CategoryPublicSerializer  # без is_active
+    """Только корневые категории для админки"""
+    serializer_class = CategoryListSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-
-        # Админ, контент, суперадмин видят все категории
-        if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
-            return Category.objects.filter(parent__isnull=True)
-
-        # Гости и покупатели видят только активные
-        return Category.objects.filter(parent__isnull=True, is_active=True)
+        if user.is_superuser or user.role == 'admin' or user.role == 'content':
+            return Category.objects.filter(parent__isnull=True)  # только корневые
+        return Category.objects.none()
 
 
 
