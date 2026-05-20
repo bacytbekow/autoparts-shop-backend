@@ -29,10 +29,19 @@ class CategoryPublicSerializer(serializers.ModelSerializer):
         return CategoryPublicSerializer(children, many=True).data
 
 
-# apps/categories/serializers.py
+class CategoryAdminChildrenSerializer(serializers.ModelSerializer):
+    """Для детей категорий в админке (с is_active)"""
+    has_children = serializers.BooleanField(source='children.count', read_only=True)
+    children_count = serializers.IntegerField(source='children.count', read_only=True)
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug', 'image', 'is_active', 'order', 'has_children', 'children_count']
 
+
+
+# apps/categories/serializers.py
 class CategoryDetailSerializer(serializers.ModelSerializer):
-    children = CategoryPublicSerializer(many=True, read_only=True)
+    children = CategoryAdminChildrenSerializer(many=True, read_only=True)
     parent_name = serializers.CharField(source='parent.name', read_only=True)
     created_by_info = serializers.SerializerMethodField()
     updated_by_info = serializers.SerializerMethodField()
@@ -61,9 +70,9 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
-    """Для админов/контента (с is_active)"""
     children_count = serializers.IntegerField(source='children.count', read_only=True)
+    has_children = serializers.BooleanField(source='children.count', read_only=True)
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'image', 'parent', 'is_active', 'order', 'children_count']
+        fields = ['id', 'name', 'slug', 'image', 'parent', 'is_active', 'order', 'children_count', 'has_children']
