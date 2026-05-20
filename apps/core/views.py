@@ -8,8 +8,8 @@ from .serializers import (
     SocialLinkSerializer
 )
 from .permissions import IsAdminOrSuperuser
-
-
+from django.core.cache import cache
+from rest_framework.response import Response
 class FooterSettingsView(generics.RetrieveUpdateAPIView):
     """Получение и обновление настроек футера"""
     permission_classes = [IsAdminOrSuperuser]
@@ -18,6 +18,30 @@ class FooterSettingsView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         obj, created = FooterSettings.objects.get_or_create(id=1)
         return obj
+
+    # ⬇️ МЫНА МЕТОДТУ КОШУУ ⬇️
+    def get(self, request, *args, **kwargs):
+        cache_key = 'footer_settings'
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return Response(cached_data)
+
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        cache.set(cache_key, data, 3600)
+
+        return Response(data)
+
+    def put(self, request, *args, **kwargs):
+        cache.delete('footer_settings')
+        return super().put(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        cache.delete('footer_settings')
+        return super().patch(request, *args, **kwargs)
 
 
 class FooterCategoryListCreateView(generics.ListCreateAPIView):
