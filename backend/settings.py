@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'apps.orders',
     'apps.reviews',
     'apps.wishlists',
+    'apps.core',
 ]
 
 MIDDLEWARE = [
