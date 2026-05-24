@@ -31,7 +31,6 @@ class Product(models.Model):
     quantity = models.IntegerField(default=0, verbose_name="Остаток на складе")
 
     # Фото
-    main_image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name="Главное фото")
 
     # Флаги
     is_available = models.BooleanField(default=True, verbose_name="В наличии")
