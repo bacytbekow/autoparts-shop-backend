@@ -4,6 +4,9 @@ from .views import *
 urlpatterns = [
 
     path('profile/', ProfileView.as_view(), name='user-profile'),
+    path('check-role/', CheckUserRoleView.as_view(), name='check-role'),
+    path('profile/update/', ProfileUpdateView.as_view(), name='profile-update'),
+
     path('all/', AllUsersListView.as_view(), name='all-users'),
     path('register/', CustomerRegisterView.as_view(), name='customer-register'),
     path('customers/', CustomerListView.as_view(), name='customer-list'),
