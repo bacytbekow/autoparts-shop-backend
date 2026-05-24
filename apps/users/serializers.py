@@ -29,7 +29,7 @@ class BaseUserDetailSerializer(serializers.ModelSerializer):
     """Базовый сериализатор (без аудита) - для менеджеров, контента, покупателей"""
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'address', 'city', 'date_joined']
+        fields = ['id',  'email', 'first_name', 'last_name', 'phone', 'address', 'city', 'date_joined']
         read_only_fields = ['id', 'username', 'email', 'date_joined']
 
 
@@ -153,7 +153,7 @@ class CustomerRegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(BaseUserDetailSerializer):
     class Meta(BaseUserDetailSerializer.Meta):
         fields = BaseUserDetailSerializer.Meta.fields + ['role']
-        read_only_fields = ['id', 'username', 'email', 'date_joined', 'role']
+        read_only_fields = ['id', 'email', 'date_joined', 'role']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -162,3 +162,28 @@ class ProfileSerializer(BaseUserDetailSerializer):
             data['role'] = 'superadmin'
         # Админ, менеджер, контент остаются как есть
         return data
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для обновления профиля (email можно менять, username нельзя)"""
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone', 'email', 'address', 'city']
+
+    def validate_email(self, value):
+        """Проверка, что email уникальный"""
+        if User.objects.filter(email=value).exclude(id=self.instance.id).exists():
+            raise serializers.ValidationError("Пользователь с таким email уже существует")
+        return value
+
+    def update(self, instance, validated_data):
+        # Обновляем только разрешенные поля
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.email = validated_data.get('email', instance.email)
+        instance.address = validated_data.get('address', instance.address)
+        instance.city = validated_data.get('city', instance.city)
+        instance.save()
+        return instance
