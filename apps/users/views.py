@@ -7,15 +7,96 @@ from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
 from .permissions import *
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework.views import APIView
+User = get_user_model()
+from django.core.cache import cache
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from .serializers import ProfileSerializer, ProfileUpdateSerializer
+
 
 class ProfileView(generics.RetrieveAPIView):
-    """Профиль текущего авторизованного пользователя"""
+    """Профиль текущего авторизованного пользователя с кэшированием"""
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
 
+    def get(self, request, *args, **kwargs):
+        user = self.get_object()
+        cache_key = f'user_profile_{user.id}'
+
+        # Пытаемся взять из кэша
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            print(f"✅ Профиль пользователя {user.id} из Redis кэша")
+            return Response(cached_data)
+
+        print(f"📡 Профиль пользователя {user.id} из базы данных")
+
+        serializer = self.get_serializer(user)
+        data = serializer.data
+
+        # Сохраняем в кэш на 1 час
+        cache.set(cache_key, data, 3600)
+
+        return Response(data)
+
+class CheckUserRoleView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        # Проверяем обязательные поля
+        if not username or not password:
+            return Response({
+                'valid': False,
+                'error': 'Неверный логин или пароль'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Проверяем пользователя и пароль
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            # Неправильный логин или пароль
+            return Response({
+                'valid': False,
+                'error': 'Неверный логин или пароль'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Все правильно - возвращаем роль
+        return Response({
+            'valid': True,
+            'role': user.role
+        }, status=status.HTTP_200_OK)
+
+
+class ProfileUpdateView(generics.UpdateAPIView):
+    serializer_class = ProfileUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Очищаем кэш профиля
+        cache_key = f'user_profile_{instance.id}'
+        cache.delete(cache_key)
+        print(f"🗑️ Кэш профиля пользователя {instance.id} очищен")
+
+        data = ProfileSerializer(instance).data
+        return Response(data, status=status.HTTP_200_OK)
 # Админстраторов
 class CreateAdminView(generics.CreateAPIView):
     serializer_class = AdminCreateSerializer
