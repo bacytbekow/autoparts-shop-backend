@@ -49,7 +49,8 @@ class CartAddView(APIView):
 
         return Response({
             'message': f'Товар "{product.name}" добавлен в корзину',
-            'quantity': cart_item.quantity
+            'quantity': cart_item.quantity,
+            'cart_item_id': cart_item.id
         }, status=status.HTTP_200_OK)
 
 
