@@ -3,13 +3,15 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .models import Product
+from django.db.models import Prefetch, Exists, OuterRef, Value, BooleanField
 from .serializers import *
 from .permissions import IsAdminOrContent
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .filters import ProductFilter
-
+from django.db.models import Exists, OuterRef, Value, BooleanField
+from apps.product_images.models import ProductImageчё
 class ProductCreateView(generics.CreateAPIView):
     """Создание товара"""
     serializer_class = ProductCreateUpdateSerializer
@@ -47,16 +49,36 @@ class ProductListView(generics.ListAPIView):
             return ProductListSerializer
         return ProductPublicSerializer
 
+    def get_serializer_context(self):
+        # Передаем request в контекст для is_favorite
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         user = self.request.user
         queryset = Product.objects.all()
 
+        # Оптимизация: загружаем фото одним запросом
+        queryset = queryset.prefetch_related(
+            Prefetch('images', queryset=ProductImage.objects.all())
+        )
+
+        # Оптимизация: добавляем флаг избранного одним запросом
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorite=Exists(
+                    Wishlist.objects.filter(user=user, product=OuterRef('pk'))
+                )
+            )
+        else:
+            queryset = queryset.annotate(is_favorite=Value(False, output_field=BooleanField()))
+
+        # Фильтр по активности для не-админов
         if not (user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser)):
             queryset = queryset.filter(is_active=True)
 
         return queryset
-
-
 
 @extend_schema(
         methods=['DELETE'],
