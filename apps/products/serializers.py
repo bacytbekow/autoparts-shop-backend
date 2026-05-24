@@ -4,6 +4,9 @@ from apps.categories.serializers import CategoryPublicSerializer
 from apps.brands.serializers import BrandPublicSerializer
 from apps.cars.serializers import CarPublicSerializer
 from apps.wishlists.models import Wishlist  # добавить импорт
+from rest_framework import serializers
+from .models import Product
+from apps.wishlists.models import Wishlist
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,19 +35,33 @@ class ProductListSerializer(serializers.ModelSerializer):
                   'is_popular', 'is_new', 'is_active', 'quantity']
 
 
+
 class ProductPublicSerializer(serializers.ModelSerializer):
-    """Для покупателей и гостей (только активные)"""
     brand_name = serializers.CharField(source='brand.name', read_only=True)
-    is_favorite = serializers.SerializerMethodField()  # ← добавить
+    main_image_url = serializers.SerializerMethodField()
+    is_favorite = serializers.SerializerMethodField()  # ← добавить метод
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'article', 'brand_name',
-                  'price', 'old_price', 'main_image', 'is_available',
-                  'is_popular', 'is_new', 'short_description',
-                  'is_favorite']  # ← добавить
+        fields = [
+            'id', 'name', 'slug', 'article', 'brand_name',
+            'price', 'old_price', 'main_image_url',
+            'is_available', 'is_popular', 'is_new',
+            'short_description', 'is_favorite', 'quantity'
+        ]
 
-    def get_is_favorite(self, obj):  # ← добавить
+    def get_main_image_url(self, obj):
+        """Возвращает URL главного фото"""
+        main_image = obj.images.filter(is_main=True).first()
+        if main_image:
+            return main_image.image.url
+        first_image = obj.images.first()
+        if first_image:
+            return first_image.image.url
+        return None
+
+    def get_is_favorite(self, obj):  # ← добавить этот метод
+        """Проверяет, находится ли товар в избранном у пользователя"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Wishlist.objects.filter(user=request.user, product=obj).exists()
