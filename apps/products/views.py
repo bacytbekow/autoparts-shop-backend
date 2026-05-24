@@ -11,7 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .filters import ProductFilter
 from django.db.models import Exists, OuterRef, Value, BooleanField
-from apps.product_images.models import ProductImageчё
+from apps.product_images.models import ProductImage
 class ProductCreateView(generics.CreateAPIView):
     """Создание товара"""
     serializer_class = ProductCreateUpdateSerializer
