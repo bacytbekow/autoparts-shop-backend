@@ -38,6 +38,7 @@ class Car(models.Model):
         verbose_name = "Автомобиль"
         verbose_name_plural = "Автомобили"
         ordering = ['brand__name', 'model', 'year_from']
+        unique_together = ['brand', 'model', 'generation', 'year_from']
 
     def save(self, *args, **kwargs):
         if not self.slug:
