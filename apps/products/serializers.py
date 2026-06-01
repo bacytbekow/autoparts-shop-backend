@@ -14,7 +14,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'article', 'manufacturer_code', 'brand',
                   'categories', 'cars', 'description', 'short_description',
                   'specifications', 'price', 'old_price', 'quantity',
-                  'main_image', 'is_available', 'is_popular', 'is_new',
+                    'is_available', 'is_popular', 'is_new',
                   'is_active', 'meta_title', 'meta_description']
         extra_kwargs = {
             'name': {'required': True},
@@ -76,7 +76,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     created_by_info = serializers.SerializerMethodField()
     updated_by_info = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()  # ← добавить
-
+    main_image = serializers.SerializerMethodField()
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'article', 'manufacturer_code',
