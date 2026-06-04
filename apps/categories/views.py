@@ -29,15 +29,17 @@ class CategoryCreateView(generics.CreateAPIView):
         print("=== ДАННЫЕ ЗАПРОСА ===")
         print("FILES:", request.FILES)
         print("DATA:", request.data)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        category = serializer.instance
+
+        # Сохраняем и получаем категорию
+        category = serializer.save()
 
         return Response({
             'message': f'Категория "{category.name}" успешно создана',
             'category': CategoryDetailSerializer(category).data
         }, status=status.HTTP_201_CREATED)
-
 
 class CategoryListView(generics.ListAPIView):
     """Корневые категории с кэшированием"""
