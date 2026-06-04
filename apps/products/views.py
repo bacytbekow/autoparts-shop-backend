@@ -12,6 +12,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from .filters import ProductFilter
 from django.db.models import Exists, OuterRef, Value, BooleanField
 from apps.product_images.models import ProductImage
+from django.core.cache import cache
 class ProductCreateView(generics.CreateAPIView):
     """Создание товара"""
     serializer_class = ProductCreateUpdateSerializer
@@ -50,7 +51,6 @@ class ProductListView(generics.ListAPIView):
         return ProductPublicSerializer
 
     def get_serializer_context(self):
-        # Передаем request в контекст для is_favorite
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
@@ -80,6 +80,25 @@ class ProductListView(generics.ListAPIView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        # 🔥 КЭШТӨӨ КОШУЛГАН БӨЛҮК
+        user = request.user
+
+        # Кэш ачкычын түзүү (ролго жана чыпкаларга жараша)
+        cache_key = f"products_list_{user.id if user.is_authenticated else 'anon'}_{hash(frozenset(request.GET.items()))}"
+
+        # Кэштен алууга аракет кылуу
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            return Response(cached_response)
+
+        # Кэш жок болсо, маалымат базасынан алуу
+        response = super().list(request, *args, **kwargs)
+
+        # Натыйжаны кэшке сактоо (60 секунд)
+        cache.set(cache_key, response.data, 60)
+
+        return response
 @extend_schema(
         methods=['DELETE'],
         parameters=[

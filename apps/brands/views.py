@@ -6,8 +6,11 @@ from .serializers import *
 from .permissions import *
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.core.cache import cache
+
+
 class BrandListView(generics.ListAPIView):
-    """Список брендов"""
+    """Список брендов с кэшированием"""
     permission_classes = [permissions.AllowAny, ]
 
     def get_serializer_class(self):
@@ -30,6 +33,27 @@ class BrandListView(generics.ListAPIView):
         # Гости и покупатели видят только активные
         return Brand.objects.filter(is_active=True)
 
+    def list(self, request, *args, **kwargs):
+        user = request.user
+
+        # Кэш ачкычын түзүү (ролго жараша)
+        if user.is_authenticated and (user.role in ['admin', 'content'] or user.is_superuser):
+            cache_key = "brands_all_admin"
+        else:
+            cache_key = "brands_all_public"
+
+        # Кэштен алууга аракет кылуу
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Кэш жок болсо, маалымат базасынан алуу
+        response = super().list(request, *args, **kwargs)
+
+        # Кэшке сактоо (15 мүнөт = 900 секунд)
+        cache.set(cache_key, response.data, 900)
+
+        return response
 
 class BrandCreateView(generics.CreateAPIView):
     """Создание бренда"""
