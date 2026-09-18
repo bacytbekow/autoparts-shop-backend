@@ -3,7 +3,6 @@ from .models import Product
 from apps.categories.serializers import CategoryPublicSerializer
 from apps.brands.serializers import BrandPublicSerializer
 from apps.cars.serializers import CarPublicSerializer
-from apps.wishlists.models import Wishlist  # добавить импорт
 from rest_framework import serializers
 from .models import Product
 from apps.wishlists.models import Wishlist
@@ -68,25 +67,119 @@ class ProductPublicSerializer(serializers.ModelSerializer):
         return False
 
 
-class ProductDetailSerializer(serializers.ModelSerializer):
-    """Детальный просмотр товара (админ/контент)"""
+# ✅ 1. КЛИЕНТ ҮЧҮН ДЕТАЛ СЕРИАЛИЗАТОР (ЖАҢЫ)
+class ProductDetailPublicSerializer(serializers.ModelSerializer):
+    """Детальный просмотр товара (для клиентов)"""
+    brand_name = serializers.CharField(source='brand.name', read_only=True)
+    categories = CategoryPublicSerializer(many=True, read_only=True)
+    cars = CarPublicSerializer(many=True, read_only=True)
+    is_favorite = serializers.SerializerMethodField()
+    main_image = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'article',
+            'brand_name', 'categories', 'cars',
+            'description', 'short_description', 'specifications',
+            'price', 'old_price', 'quantity',
+            'main_image', 'all_images',
+            'is_available', 'is_popular', 'is_new',
+            'is_favorite'
+        ]
+
+    def get_is_favorite(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from apps.wishlists.models import Wishlist
+            return Wishlist.objects.filter(user=request.user, product=obj).exists()
+        return False
+
+    def get_main_image(self, obj):
+        request = self.context.get('request')
+        first_image = obj.images.first()
+        if first_image and first_image.image:
+            return request.build_absolute_uri(first_image.image.url) if request else first_image.image.url
+        return None
+
+    def get_all_images(self, obj):
+        request = self.context.get('request')
+        images = obj.images.all()
+        if request:
+            return [request.build_absolute_uri(img.image.url) for img in images if img.image]
+        return [img.image.url for img in images if img.image]
+
+
+# ✅ 2. АДМИН/КОНТЕНТ ҮЧҮН ДЕТАЛ СЕРИАЛИЗАТОР (ЭСКИСИ, БИРОК АТЫ ӨЗГӨРҮҮ МҮМКҮН)
+class ProductDetailPublicSerializer(serializers.ModelSerializer):
+    brand_name = serializers.CharField(source='brand.name', read_only=True)
+    categories = CategoryPublicSerializer(many=True, read_only=True)
+    cars = CarPublicSerializer(many=True, read_only=True)
+    is_favorite = serializers.SerializerMethodField()
+    main_image = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'article',
+            'brand_name', 'categories', 'cars',
+            'description', 'short_description', 'specifications',
+            'price', 'old_price', 'quantity',
+            'main_image', 'all_images',
+            'is_available', 'is_popular', 'is_new',
+            'is_favorite'
+        ]
+
+    def get_is_favorite(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from apps.wishlists.models import Wishlist
+            return Wishlist.objects.filter(user=request.user, product=obj).exists()
+        return False
+
+    def get_main_image(self, obj):
+        request = self.context.get('request')
+        first_image = obj.images.first()
+        if first_image and first_image.image:
+            return request.build_absolute_uri(first_image.image.url) if request else first_image.image.url
+        return None
+
+    def get_all_images(self, obj):
+        request = self.context.get('request')
+        images = obj.images.all()
+        if request:
+            return [request.build_absolute_uri(img.image.url) for img in images if img.image]
+        return [img.image.url for img in images if img.image]
+
+
+# ✅ Админ/контент үчүн (толук)
+class ProductDetailAdminSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand.name', read_only=True)
     categories = CategoryPublicSerializer(many=True, read_only=True)
     cars = CarPublicSerializer(many=True, read_only=True)
     created_by_info = serializers.SerializerMethodField()
     updated_by_info = serializers.SerializerMethodField()
-    is_favorite = serializers.SerializerMethodField()  # ← добавить
+    is_favorite = serializers.SerializerMethodField()
     main_image = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'article', 'manufacturer_code',
-                  'brand', 'brand_name', 'categories', 'cars',
-                  'description', 'short_description', 'specifications',
-                  'price', 'old_price', 'quantity', 'main_image',
-                  'is_available', 'is_popular', 'is_new', 'is_active',
-                  'meta_title', 'meta_description', 'views_count', 'orders_count',
-                  'created_at', 'updated_at', 'created_by_info', 'updated_by_info',
-                  'is_favorite']  # ← добавить
+        fields = [
+            'id', 'name', 'slug', 'article', 'manufacturer_code',
+            'brand', 'brand_name', 'categories', 'cars',
+            'description', 'short_description', 'specifications',
+            'price', 'old_price', 'quantity',
+            'main_image', 'all_images',
+            'is_available', 'is_popular', 'is_new', 'is_active',
+            'meta_title', 'meta_description',
+            'views_count', 'orders_count',
+            'created_at', 'updated_at',
+            'created_by_info', 'updated_by_info',
+            'is_favorite'
+        ]
 
     def get_created_by_info(self, obj):
         if obj.created_by:
@@ -104,8 +197,23 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def get_is_favorite(self, obj):  # ← добавить
+    def get_is_favorite(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
+            from apps.wishlists.models import Wishlist
             return Wishlist.objects.filter(user=request.user, product=obj).exists()
         return False
+
+    def get_main_image(self, obj):
+        request = self.context.get('request')
+        first_image = obj.images.first()
+        if first_image and first_image.image:
+            return request.build_absolute_uri(first_image.image.url) if request else first_image.image.url
+        return None
+
+    def get_all_images(self, obj):
+        request = self.context.get('request')
+        images = obj.images.all()
+        if request:
+            return [request.build_absolute_uri(img.image.url) for img in images if img.image]
+        return [img.image.url for img in images if img.image]

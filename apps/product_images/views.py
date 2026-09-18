@@ -6,7 +6,7 @@ from .permissions import IsAdminOrContent
 from rest_framework.pagination import PageNumberPagination
 import os
 from django.conf import settings
-
+import cloudinary.uploader
 
 class NoPagination(PageNumberPagination):
     page_size = None
@@ -91,18 +91,17 @@ class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
                 is_main=True
             ).exclude(id=instance.id).update(is_main=False)
 
-        # Сохраняем старый путь до обновления
-        old_image_path = instance.image.path if instance.image else None
+        # ✅ Cloudinary: эски сүрөттүн public_id'син сактоо
+        old_public_id = instance.image.public_id if instance.image else None
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=user)
 
-        # Удаляем старый файл, если он был заменен
-        new_image_path = instance.image.path if instance.image else None
-        if old_image_path and old_image_path != new_image_path:
-            if os.path.isfile(old_image_path):
-                os.remove(old_image_path)
+        # ✅ Cloudinary: эгерде сүрөт өзгөргөн болсо, эскисин удалить
+        new_public_id = instance.image.public_id if instance.image else None
+        if old_public_id and old_public_id != new_public_id:
+            cloudinary.uploader.destroy(old_public_id)
 
         return Response({
             'message': 'Фото успешно обновлено',
@@ -119,12 +118,11 @@ class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Удаляем файл с диска
-        if instance.image:
-            if os.path.isfile(instance.image.path):
-                os.remove(instance.image.path)
+        # ✅ Cloudinary: сүрөттү удалить
+        if instance.image and instance.image.public_id:
+            cloudinary.uploader.destroy(instance.image.public_id)
 
         instance.delete()
         return Response({
-            'message': 'Фото успешно удалено'
+            'message': 'Фото успешно удалено из Cloudinary и базы'
         }, status=status.HTTP_200_OK)

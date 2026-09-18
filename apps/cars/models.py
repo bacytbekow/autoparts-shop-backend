@@ -1,13 +1,11 @@
 # apps/cars/models.py
-
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
-from apps.brands.models import Brand
 
 
 class Car(models.Model):
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, verbose_name="Бренд")
+    make = models.CharField(max_length=100, verbose_name="Марка")
     model = models.CharField(max_length=200, verbose_name="Модель")
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     generation = models.CharField(max_length=100, blank=True, verbose_name="Поколение")
@@ -37,15 +35,14 @@ class Car(models.Model):
     class Meta:
         verbose_name = "Автомобиль"
         verbose_name_plural = "Автомобили"
-        ordering = ['brand__name', 'model', 'year_from']
-        unique_together = ['brand', 'model', 'generation', 'year_from']
+        ordering = ['make', 'model', 'year_from']
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            slug_str = f"{self.brand.name} {self.model} {self.generation}".strip()
+            slug_str = f"{self.make} {self.model} {self.generation}".strip()
             self.slug = slugify(slug_str, allow_unicode=True)
         super().save(*args, **kwargs)
 
     def __str__(self):
         year_str = f"({self.year_from}-{self.year_to})" if self.year_from else ""
-        return f"{self.brand.name} {self.model} {self.generation} {year_str}".strip()
+        return f"{self.make} {self.model} {self.generation} {year_str}".strip()
